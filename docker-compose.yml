@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # NVIDIA GPU service
+  bon-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bon-jailbreak:gpu
+    container_name: bon-jailbreak-gpu
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HF_TOKEN=${HF_TOKEN}
+      - DEVICE=cuda
+      - N_SAMPLES_PER_PROMPT=${N_SAMPLES_PER_PROMPT:-5000}
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+      - huggingface-cache:/app/.cache/huggingface
+      - torch-cache:/app/.cache/torch
+    profiles:
+      - gpu
+    command: ["--n-samples", "${N_SAMPLES_PER_PROMPT:-5000}", "--n-prompts", "${N_PROMPTS:-50}"]
+
+  # CPU-only service
+  bon-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    image: bon-jailbreak:cpu
+    container_name: bon-jailbreak-cpu
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - DEVICE=cpu
+      - N_SAMPLES_PER_PROMPT=${N_SAMPLES_PER_PROMPT:-500}
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+      - huggingface-cache:/app/.cache/huggingface
+      - torch-cache:/app/.cache/torch
+    profiles:
+      - cpu
+    command: ["--n-samples", "${N_SAMPLES_PER_PROMPT:-500}", "--n-prompts", "${N_PROMPTS:-10}"]
+
+  # ARM64/Apple Silicon service
+  bon-arm64:
+    build:
+      context: .
+      dockerfile: Dockerfile.arm64
+    image: bon-jailbreak:arm64
+    container_name: bon-jailbreak-arm64
+    platform: linux/arm64
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - DEVICE=mps
+      - N_SAMPLES_PER_PROMPT=${N_SAMPLES_PER_PROMPT:-1000}
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+      - huggingface-cache:/app/.cache/huggingface
+      - torch-cache:/app/.cache/torch
+    profiles:
+      - arm64
+    command: ["--n-samples", "${N_SAMPLES_PER_PROMPT:-1000}", "--n-prompts", "${N_PROMPTS:-25}"]
+
+  # Universal auto-detect service (default)
+  bon-universal:
+    build:
+      context: .
+      dockerfile: Dockerfile.universal
+    image: bon-jailbreak:universal
+    container_name: bon-jailbreak
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - N_SAMPLES_PER_PROMPT=${N_SAMPLES_PER_PROMPT:-1000}
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+      - huggingface-cache:/app/.cache/huggingface
+      - torch-cache:/app/.cache/torch
+    # Try to use GPU runtime if available, fallback to default
+    runtime: ${DOCKER_RUNTIME:-runc}
+    profiles:
+      - auto
+    command: ["--n-samples", "${N_SAMPLES_PER_PROMPT:-1000}", "--n-prompts", "${N_PROMPTS:-50}"]
+
+volumes:
+  huggingface-cache:
+    driver: local
+  torch-cache:
+    driver: local

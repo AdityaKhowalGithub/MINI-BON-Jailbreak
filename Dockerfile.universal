@@ -1,0 +1,69 @@
+# Multi-stage build for universal compatibility
+FROM python:3.10-slim as base
+
+# Set working directory
+WORKDIR /app
+
+# Install common system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install base Python dependencies (without PyTorch)
+RUN pip install --no-cache-dir \
+    transformers \
+    accelerate \
+    huggingface-hub \
+    matplotlib \
+    numpy \
+    pathlib2
+
+# Copy application code
+COPY . .
+
+# Create output directory
+RUN mkdir -p output/plots
+
+# Set common environment variables
+ENV PYTHONUNBUFFERED=1
+ENV TORCH_HOME=/app/.cache/torch
+ENV HF_HOME=/app/.cache/huggingface
+ENV TRANSFORMERS_CACHE=/app/.cache/huggingface/transformers
+
+# Create cache directories
+RUN mkdir -p $TORCH_HOME $HF_HOME $TRANSFORMERS_CACHE
+
+# Create entrypoint script that detects hardware
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Detect hardware and install appropriate PyTorch\n\
+if command -v nvidia-smi &> /dev/null; then\n\
+    echo "NVIDIA GPU detected, installing CUDA PyTorch..."\n\
+    pip install --no-cache-dir torch torchvision torchaudio\n\
+    export DEVICE="cuda"\n\
+elif [[ $(uname -m) == "arm64" ]] || [[ $(uname -m) == "aarch64" ]]; then\n\
+    echo "ARM64 architecture detected, installing CPU PyTorch..."\n\
+    pip install --no-cache-dir torch torchvision torchaudio\n\
+    if [[ $(uname -s) == "Darwin" ]]; then\n\
+        export DEVICE="mps"\n\
+    else\n\
+        export DEVICE="cpu"\n\
+    fi\n\
+else\n\
+    echo "No GPU detected, installing CPU PyTorch..."\n\
+    pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu\n\
+    export DEVICE="cpu"\n\
+fi\n\
+\n\
+# Run the main script with detected device\n\
+exec python main.py --device $DEVICE "$@"\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]

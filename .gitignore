@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Output files
+output/
+*.tsv
+*.png
+*.jpg
+*.pdf
+
+# Model cache
+.cache/
+models/
+*.bin
+*.safetensors
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Data files (except the ones we want to track)
+*.csv
+!data/prompts.csv
+!data/targeted_prompts.csv
