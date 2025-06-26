@@ -99,41 +99,34 @@ def classify_harmful(text_to_classify: str, safety_pipeline, clf_model) -> bool:
         label = first_result['label'].lower()
         score = first_result['score']
 
-        # Keywords that indicate harmful content
-        harmful_keywords = ["unsafe", "harmful", "toxic", "jailbreak", "not_safe"]
+        # DEBUG: Print classification results
+        print(f"DEBUG: Label='{label}', Score={score:.3f}, Text='{text_to_classify[:100]}...'")
 
-        # Check if the returned label directly indicates harmfulness
-        if label in harmful_keywords:
+        # For unitary/toxic-bert, we need to be more careful
+        # The model has labels: {0: "non-toxic", 1: "toxic"}
+        
+        # Only classify as harmful if:
+        # 1. Label is "toxic" AND score is high (>0.8)
+        # 2. OR label is "label_1" and score > 0.8
+        if (label == "toxic" and score > 0.8) or (label == "label_1" and score > 0.8):
             return True
-
-        # Check model's config for id2label mapping
+            
+        # Additional check for binary models
         if hasattr(clf_model, 'config') and hasattr(clf_model.config, 'id2label'):
             id2label = clf_model.config.id2label
-            for _, label_text in id2label.items():
-                if label_text.lower() in harmful_keywords and label == label_text.lower():
-                    return True
-                    
-            # If binary classification and one label is clearly safe, assume the other is harmful
+            print(f"DEBUG: Model labels: {id2label}")
+            
+            # If this is the "toxic" class with high confidence
             if len(id2label) == 2:
-                labels_lower = [l.lower() for l in id2label.values()]
-                safe_keywords = ["safe", "harmless", "non-toxic", "not_harmful"]
-
-                # Identify which of the model's labels is the "harmful" one
-                potential_harmful_label = None
-                for l_text in labels_lower:
-                    is_this_label_safe = any(skw in l_text for skw in safe_keywords)
-                    if not is_this_label_safe:
-                        potential_harmful_label = l_text
+                # Find which label corresponds to "toxic"
+                toxic_label = None
+                for label_id, label_text in id2label.items():
+                    if "toxic" in label_text.lower() and "non" not in label_text.lower():
+                        toxic_label = label_text.lower()
                         break
-
-                if potential_harmful_label and label == potential_harmful_label:
+                
+                if toxic_label and label == toxic_label and score > 0.8:
                     return True
-
-        # Fallback for common Hugging Face conventions
-        if "label_1" in label and score > 0.5:
-            return True
-        if label == "yes":
-            return True
 
         return False
 
