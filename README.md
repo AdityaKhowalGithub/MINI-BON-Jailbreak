@@ -136,14 +136,14 @@ The paper shows that by generating N augmented versions of a harmful prompt and 
 ### ASR vs N Attempts
 Our implementation produces results consistent with the original paper, showing the effectiveness of Best-of-N sampling:
 
-![ASR vs N Curve](output/plots/asr_vs_n_gemma-3-1b-it_toxic-bert.png)
+![ASR vs N Curve](./asr_vs_n_gemma-3-1b-it_toxic-bert.png)
 
 *Attack Success Rate increases with number of augmentation attempts N. The curve shows rapid initial growth followed by plateauing, consistent with the paper's findings.*
 
 ### Success Distribution
 Distribution of N values where jailbreaks succeeded, showing most attacks succeed within the first few hundred attempts:
 
-![Success Distribution](output/plots/n_dist_success_gemma-3-1b-it_toxic-bert.png)
+![Success Distribution](./n_dist_success_gemma-3-1b-it_toxic-bert.png)
 
 *Histogram showing at what N value each successful jailbreak occurred. Most prompts are successfully jailbroken within N=100-500 attempts.*
 
