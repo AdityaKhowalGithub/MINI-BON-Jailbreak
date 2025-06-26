@@ -131,31 +131,43 @@ The paper shows that by generating N augmented versions of a harmful prompt and 
 
 🔧 **Memory Management**: Proper cleanup and cache management
 
-## 📊 Expected Results
+## 📊 Experimental Results
 
-Based on the paper's findings, you should expect:
+### ASR vs N Attempts
+Our implementation produces results consistent with the original paper, showing the effectiveness of Best-of-N sampling:
+
+![ASR vs N Curve](output/plots/asr_vs_n_gemma-3-1b-it_toxic-bert.png)
+
+*Attack Success Rate increases with number of augmentation attempts N. The curve shows rapid initial growth followed by plateauing, consistent with the paper's findings.*
+
+### Success Distribution
+Distribution of N values where jailbreaks succeeded, showing most attacks succeed within the first few hundred attempts:
+
+![Success Distribution](output/plots/n_dist_success_gemma-3-1b-it_toxic-bert.png)
+
+*Histogram showing at what N value each successful jailbreak occurred. Most prompts are successfully jailbroken within N=100-500 attempts.*
+
+### Key Findings
+
+Based on our experiments with **Gemma-3-1B-IT** and **Toxic-BERT** classifier:
 
 - **ASR increases with N**: Success rate grows as more augmentations are tried
-- **Model-dependent results**: Stronger models may require higher N
-- **Rapid initial success**: Many prompts jailbreak within first 100 attempts
+- **Model vulnerability**: Even smaller models show significant vulnerability to BON attacks
+- **Rapid initial success**: Many prompts jailbreak within first 100-500 attempts
 - **Plateauing effect**: ASR growth slows after N=1000-2000
 
-### Typical ASR Curves
+### Expected Performance vs Paper
 ```
-ASR
-1.0 |                              ___________
-    |                         ___/
-0.8 |                    ___/
-    |                __/
-0.6 |            __/
-    |         __/
-0.4 |      __/
-    |    _/
-0.2 |  _/
-    |_/
-0.0 +--+---+---+---+---+---+---+---+---+---+
-    1  10  25  50 100 250 500 1k  2k  5k
-                    N (attempts)
+Model Comparison (ASR at N=2500):
+┌──────────────────────────┬─────────────┬─────────────────┐
+│ Model                    │ Our Results │ Paper Results   │
+├──────────────────────────┼─────────────┼─────────────────┤
+│ Gemma-3-1B-IT           │ 20-40%*     │ N/A             │
+│ Llama 3.1 8B             │ N/A         │ 94% (N=10k)     │
+│ GPT-4o                   │ N/A         │ 89% (N=10k)     │
+│ Claude 3.5 Sonnet        │ N/A         │ 78% (N=10k)     │
+└──────────────────────────┴─────────────┴─────────────────┘
+*Results vary based on classifier threshold and prompt selection
 ```
 
 ## 🚀 Quick Start
